@@ -21,9 +21,10 @@ class EllipticCurve:
     p: int
 
     G: NormalPoint
+    n: int
 
     # Constructor does not check if p is indeed prime
-    def __init__(self, a: int, b: int, p: int, G: NormalPoint):  # noqa: N803
+    def __init__(self, a: int, b: int, p: int, G: NormalPoint, n: int):  # noqa: N803
         if p % 4 != 3:  # noqa: PLR2004
             raise ValueError('Prime number should be 3 modulo 4 for performing sqrt')
 
@@ -31,12 +32,13 @@ class EllipticCurve:
         self.b = b
         self.p = p
         self.G = G
+        self.n = n
 
     def is_valid(self, p: Point) -> bool:
         if isinstance(p, PointAtInfinity):
             return True
 
-        return (p.x**3 + self.a * p.x + self.b - p.y ** 2) % self.p == 0
+        return (p.x**3 + self.a * p.x + self.b - p.y**2) % self.p == 0
 
     # https://koclab.cs.ucsb.edu/teaching/ccs130h/2013/w00e-sqrt.pdf
     def get_y(self, x: int, negative: bool) -> int:  # noqa: FBT001
@@ -88,4 +90,5 @@ secp256k1 = EllipticCurve(
     NormalPoint(
         0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798, 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
     ),
+    0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141,
 )
