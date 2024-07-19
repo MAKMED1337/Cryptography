@@ -70,7 +70,7 @@ class EllipticCurve:
         return NormalPoint(r_x, (lam * (p.x - r_x) - p.y) % self.p)
 
     def multiply(self, p: Point, k: int) -> Point:
-        res = PointAtInfinity()
+        res: Point = PointAtInfinity()
         while k:
             if k & 1:
                 res = self.add(res, p)

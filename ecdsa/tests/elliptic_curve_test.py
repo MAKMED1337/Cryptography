@@ -1,6 +1,6 @@
 import pytest
 
-from ..elliptic_curve import NormalPoint, PointAtInfinity, secp256k1
+from ..elliptic_curve import NormalPoint, Point, PointAtInfinity, secp256k1
 
 G = secp256k1.G
 
@@ -64,7 +64,7 @@ def test_multiplication() -> None:
     for p in points:
         assert isinstance(secp256k1.multiply(p, 0), PointAtInfinity)
         assert secp256k1.multiply(p, 1) == p
-        res = p
+        res: Point = p
         for i in range(1, 100):
             assert secp256k1.multiply(p, i) == res
             res = secp256k1.add(res, p)
