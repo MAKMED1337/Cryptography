@@ -1,3 +1,4 @@
+import os
 import secrets
 from dataclasses import dataclass
 from hashlib import sha256
@@ -146,10 +147,7 @@ class RSA(SignatureAlgorithm):
         return T[:maskLen]
 
     # https://datatracker.ietf.org/doc/html/rfc8017#section-9.1.1
-    def _EMSA_PSS_ENCODE(self, M: bytes, emBits: int) -> bytes:
-        # no hash is used, so
-        sLen = 0
-
+    def _EMSA_PSS_ENCODE(self, M: bytes, emBits: int, sLen: int) -> bytes:
         """
         1.   If the length of M is greater than the input limitation for
                    the hash function (2^61 - 1 octets for SHA-1), output
@@ -176,7 +174,7 @@ class RSA(SignatureAlgorithm):
         4.   Generate a random octet string salt of length sLen; if sLen =
              0, then salt is the empty string.
         """
-        salt = b''
+        salt = os.urandom(sLen)
 
         """
         5.   Let
@@ -234,9 +232,7 @@ class RSA(SignatureAlgorithm):
         return EM
 
     # https://datatracker.ietf.org/doc/html/rfc8017#section-9.1.2
-    def _EMSA_PSS_VERIFY(self, M: bytes, EM: bytes, emBits: int) -> bool:
-        sLen = 0
-
+    def _EMSA_PSS_VERIFY(self, M: bytes, EM: bytes, emBits: int, sLen: int) -> bool:
         """
         1.  If the length of M is greater than the input limitation for
             the hash function (2^61 - 1 octets for SHA-1), output
@@ -263,7 +259,7 @@ class RSA(SignatureAlgorithm):
         4.  If the rightmost octet of EM does not have hexadecimal value
             0xbc, output "inconsistent" and stop.
         """
-        if EM[-1] != 0xbc:  # noqa: PLR2004
+        if EM[-1] != 0xBC:  # noqa: PLR2004
             return False
 
         """
@@ -316,7 +312,7 @@ class RSA(SignatureAlgorithm):
         """
         11.  Let salt be the last sLen octets of DB.
         """
-        salt = DB[:-sLen]
+        salt = DB[len(DB) - sLen :]
 
         """
         12. Let
@@ -338,7 +334,7 @@ class RSA(SignatureAlgorithm):
         return H == H_
 
     # https://datatracker.ietf.org/doc/html/rfc8017#section-8.1
-    def _RSASSA_PSS(self, K: RSAPrivateKey, M: bytes) -> bytes:
+    def _RSASSA_PSS(self, K: RSAPrivateKey, M: bytes, sLen: int) -> bytes:
         """
         1.  EMSA-PSS encoding: Apply the EMSA-PSS encoding operation
             (Section 9.1.1) to the message M to produce an encoded message
@@ -354,7 +350,7 @@ class RSA(SignatureAlgorithm):
             outputs "encoding error", output "encoding error" and stop.
         """
         modBits = K.n.bit_length()
-        EM = self._EMSA_PSS_ENCODE(M, modBits - 1)
+        EM = self._EMSA_PSS_ENCODE(M, modBits - 1, sLen)
 
         """
         2.  RSA signature:
@@ -380,7 +376,7 @@ class RSA(SignatureAlgorithm):
         return S
 
     # https://datatracker.ietf.org/doc/html/rfc8017#section-8.1.2
-    def _RSASSA_PSS_VERIFY(self, P: RSAPublicKey, M: bytes, S: bytes) -> bool:
+    def _RSASSA_PSS_VERIFY(self, P: RSAPublicKey, M: bytes, S: bytes, sLen: int) -> bool:
         """
         1.  Length checking: If the length of the signature S is not k
             octets, output "invalid signature" and stop.
@@ -421,7 +417,7 @@ class RSA(SignatureAlgorithm):
             message EM to determine whether they are consistent:
                 Result = EMSA-PSS-VERIFY (M, EM, modBits - 1).
         """
-        Result = self._EMSA_PSS_VERIFY(M, EM, modBits - 1)
+        Result = self._EMSA_PSS_VERIFY(M, EM, modBits - 1, sLen)
 
         """
         4.  If Result = "consistent", output "valid signature".
@@ -431,15 +427,15 @@ class RSA(SignatureAlgorithm):
         return Result
 
     @override
-    def sign_message(self, message: bytes, private_key: PrivateKey) -> bytes:
+    def sign_message(self, message: bytes, private_key: PrivateKey, sLen: int = 0) -> bytes:
         if not isinstance(private_key, RSAPrivateKey):
             msg = f'Excepted RSAPrivateKey, but got: {type(private_key)}'
             raise TypeError(msg)
-        return self._RSASSA_PSS(private_key, message)
+        return self._RSASSA_PSS(private_key, message, sLen)
 
     @override
-    def verify_signature(self, message: bytes, public_key: PublicKey, signature: bytes) -> bool:
+    def verify_signature(self, message: bytes, public_key: PublicKey, signature: bytes, sLen: int = 0) -> bool:
         if not isinstance(public_key, RSAPublicKey):
             msg = f'Excepted RSAPublicKey, but got: {type(public_key)}'
             raise TypeError(msg)
-        return self._RSASSA_PSS_VERIFY(public_key, message, signature)
+        return self._RSASSA_PSS_VERIFY(public_key, message, signature, sLen)
