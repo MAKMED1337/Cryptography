@@ -40,7 +40,7 @@ class RSA(SignatureAlgorithm):
     keyBits = 1024
 
     def _generate_e(self, power: int) -> int:
-        e = 65357
+        e = 65537
         while gcd(e, power) != 1:
             e = secrets.randbelow(power - 1) + 1
         return e
