@@ -10,6 +10,8 @@ select = ["ALL"]
 ignore = [
     "D",
     "COM812",
+    "EM101",
+    "TRY003",
     "ISC001", # ruff format requires this
 ]
 
@@ -32,3 +34,7 @@ flake8-annotations.suppress-dummy-args = true
 flake8-annotations.mypy-init-return = true
 
 flake8-builtins.builtins-ignorelist = ["id", "type"]
+
+[lint.per-file-ignores]
+"**/{tests}/*" = ["S101", "TID252"]
+"rsa/rsa.py" = ["N"]
